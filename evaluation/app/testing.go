@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -19,8 +20,8 @@ var (
 )
 
 type imgBody struct {
-	Width string `json:"width"`
-	Height string `json:"height"`
+	Width int `json:"width"`
+	Height int `json:"height"`
 	Img     string `json:"img"`
 }
 
@@ -29,21 +30,34 @@ func Testing() {
 		Host: host1,
 	})
 	c2, _ := client.NewClient(client.Config{
-		Host: host1,
+		Host: host2,
 	})
 	p := InitMetrics(pushgateway, "client")
-	f, _ := os.Open("test.img")
-	fb, _ := ioutil.ReadAll(f)
-	body := imgBody{
-		Width: "50",
-		Height: "50",
-		Img: base64.StdEncoding.EncodeToString(fb),
-	}
-	bodyBytes := bytes.NewBuffer(nil)
-	err := json.NewEncoder(bodyBytes).Encode(body)
+	f, err := os.Open("test.img")
 	if err != nil {
 		panic(err)
 	}
+
+	fb, _ := ioutil.ReadAll(f)
+	body := imgBody{
+		Width: 50,
+		Height: 50,
+		Img: base64.StdEncoding.EncodeToString(fb),
+	}
+	bodyBytes := bytes.NewBuffer(nil)
+	err = json.NewEncoder(bodyBytes).Encode(body)
+	if err != nil {
+		panic(err)
+	}
+	r, err := c1.FcInvoke(&client.FcInvokeInput{
+		FuncName: "picture",
+		Args: bodyBytes.Bytes(),
+		EnableNative: "true",
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(r.RespBody)
 	price1 := 2.0
 	price2 := 3.0
 	for i := 0; i < 10; i++ {
