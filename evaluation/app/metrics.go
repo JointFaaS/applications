@@ -16,10 +16,20 @@ var (
 		},
 		[]string{"funcName"},
 	)
+
+	price = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "manager",
+			Subsystem: "requests",
+			Name: "price_of_request",
+		},
+		[]string{"cloud"},
+	)
 )
 
 func InitMetrics(url string, job string) (*push.Pusher) {
 	p := push.New(url, job)
 	p.Collector(processed_time)
+	p.Collector(price)
 	return p
 }

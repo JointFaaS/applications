@@ -1,46 +1,81 @@
 package app
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/JointFaaS/Client-go/client"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+var (
+	host1 string = "http://"
+	host2 string = "http://"
+	pushgateway string = ""
+)
+
+type imgBody struct {
+	Width string `json:"width"`
+	Height string `json:"height"`
+	Img     string `json:"img"`
+}
+
 func Testing() {
 	c1, _ := client.NewClient(client.Config{
-		Host: "http://",
+		Host: host1,
 	})
 	c2, _ := client.NewClient(client.Config{
-		Host: "http://",
+		Host: host1,
 	})
-	p := InitMetrics("xx", "client")
+	p := InitMetrics(pushgateway, "client")
+	f, _ := os.Open("test.img")
+	fb, _ := ioutil.ReadAll(f)
+	body := imgBody{
+		Width: "50",
+		Height: "50",
+		Img: base64.StdEncoding.EncodeToString(fb),
+	}
+	bodyBytes := bytes.NewBuffer(nil)
+	err := json.NewEncoder(bodyBytes).Encode(body)
+	if err != nil {
+		panic(err)
+	}
+	price1 := 2.0
+	price2 := 3.0
 	for i := 0; i < 10; i++ {
 		go func ()  {
 			for j := 0; j < 1000; j++ {
-				limit := (i + 1) * 100
 				start := time.Now()
-				if j < limit {
+				if price1 < price2 {
 					c1.FcInvoke(&client.FcInvokeInput{
-						FuncName: "hello",
-						Args: make([]byte, 0),
-						EnableNative: "True",
+						FuncName: "picture",
+						Args: bodyBytes.Bytes(),
+						EnableNative: "true",
 					})
 				} else {
 					c2.FcInvoke(&client.FcInvokeInput{
-						FuncName: "hello",
-						Args: make([]byte, 0),
-						EnableNative: "True",
+						FuncName: "picture",
+						Args: bodyBytes.Bytes(),
+						EnableNative: "true",
 					})
 				}
 				cost := time.Since(start)
-				processed_time.With(prometheus.Labels{"funcName": "hello"}).Observe(cost.Seconds())
+				processed_time.With(prometheus.Labels{"funcName": "picture"}).Observe(cost.Seconds())
 			}
 		}()
 	}
 
-	for {
+	for j := 0; j < 10; j++ {
+		price.With(prometheus.Labels{"cloud": "aliyun"}).Set(price1)
+		price.With(prometheus.Labels{"cloud": "aws"}).Set(price2)
 		p.Push()
+		if j > 4 {
+			price2 = 1.0
+		}
 		time.Sleep(time.Duration(time.Second * 5))
 	}
 }
