@@ -161,3 +161,9 @@ dmypy.json
 # idea
 .idea
 *.iml
+
+# java
+.settings
+
+# build
+build/
