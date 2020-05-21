@@ -38,12 +38,18 @@ var priceCmd = &cobra.Command{
 	Use:   "price",
 	Short: "price test",
 	Run: func(cmd *cobra.Command, args []string) {
-		c1, _ := client.NewClient(client.Config{
+		c1, err := client.NewClient(client.Config{
 			Host: host1,
 		})
-		c2, _ := client.NewClient(client.Config{
+		if err != nil {
+			panic(err)
+		}
+		c2, err := client.NewClient(client.Config{
 			Host: host2,
 		})
+		if err != nil {
+			panic(err)
+		}
 		f, err := os.Open("test.img")
 		if err != nil {
 			panic(err)
@@ -71,7 +77,7 @@ var priceCmd = &cobra.Command{
 		fmt.Println(r.RespBody)
 		price1 := 2.0
 		price2 := 3.0
-		timeSlice := make([]time.Duration, 500)
+		timeSlice := make([]time.Duration, 500, 500)
 		for i := 0; i < 10; i++ {
 			if price1 < price2 {
 				price1 = price2 + 2
@@ -94,7 +100,7 @@ var priceCmd = &cobra.Command{
 					})
 				}
 				cost := time.Since(start)
-				timeSlice = append(timeSlice, cost)
+				timeSlice[i*10+j] = cost
 			}
 		}
 
@@ -115,6 +121,9 @@ var latencyCmd = &cobra.Command{
 func rootInit() {
 	priceCmd.Flags().StringVarP(&host1, "host1", "1", "", "target manager 1")
 	priceCmd.Flags().StringVarP(&host2, "host2", "2", "", "target manager 2")
+	priceCmd.MarkFlagRequired("host1")
+	priceCmd.MarkFlagRequired("host2")
+
 	rootCmd.AddCommand(priceCmd, latencyCmd)
 }
 
